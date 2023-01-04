@@ -1,8 +1,10 @@
 using System;
 using System.Drawing;
+using System.IO;
 using SafeSilk.GL;
 using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
+using StbImageSharp;
 
 namespace Tests.GL;
 
@@ -15,6 +17,7 @@ public class Main : IDisposable
     private uint _vbo;
     private uint _ebo;
     private uint _program;
+    private uint _texture;
 
     public Main(WindowOptions options)
     {
@@ -33,10 +36,11 @@ public class Main : IDisposable
         _gl.BindVertexArray(_vao);
 
         float[] vertices = new[]
-        {
-            0.0f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-            0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-           -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f
+        { 
+           -0.5f,  0.5f, 0.0f, 0.0f, 0.0f,
+            0.5f,  0.5f, 0.0f, 1.0f, 0.0f,
+            0.5f, -0.5f, 0.0f, 1.0f, 1.0f,
+           -0.5f, -0.5f, 0.0f, 0.0f, 1.0f 
         };
 
         _vbo = _gl.GenBuffer();
@@ -45,7 +49,8 @@ public class Main : IDisposable
 
         uint[] indices = new[]
         {
-            0u, 1u, 2u
+            0u, 1u, 3u,
+            1u, 2u, 3u
         };
 
         _ebo = _gl.GenBuffer();
@@ -56,26 +61,28 @@ public class Main : IDisposable
 #version 330 core
 
 layout (location = 0) in vec3 aPosition;
-layout (location = 1) in vec4 aColor;
+layout (location = 1) in vec2 aTexCoords;
 
-out vec4 frag_color;
+out vec2 frag_texCoords;
 
 void main()
 {
     gl_Position = vec4(aPosition, 1.0);
-    frag_color = aColor;
+    frag_texCoords = aTexCoords;
 }";
 
         const string fragmentCode = @"
 #version 330 core
 
-in vec4 frag_color;
+in vec2 frag_texCoords;
 
 out vec4 out_color;
 
+uniform sampler2D uTexture;
+
 void main()
 {
-    out_color = frag_color;
+    out_color = texture(uTexture, frag_texCoords);
 }";
 
         uint vertexShader = _gl.CreateShader(ShaderType.VertexShader);
@@ -99,12 +106,21 @@ void main()
         _gl.DetachShader(_program, fragmentShader);
         _gl.DeleteShader(vertexShader);
         _gl.DeleteShader(fragmentShader);
+
+        ImageResult result = ImageResult.FromMemory(File.ReadAllBytes("Content/awesomeface.png"),
+            ColorComponents.RedGreenBlueAlpha);
+        
+        _texture = _gl.GenTexture();
+        _gl.BindTexture(TextureTarget.Texture2D, _texture);
+        _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, (uint)result.Width, (uint)result.Height, 0,
+            PixelFormat.Rgba, PixelType.UnsignedByte, result.Data);
+        _gl.GenerateMipmap(TextureTarget.Texture2D);
         
         _gl.EnableVertexAttribArray(0);
-        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 28, 0);
+        _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 20, 0);
         
         _gl.EnableVertexAttribArray(1);
-        _gl.VertexAttribPointer(1, 4, VertexAttribPointerType.Float, false, 28, 12);
+        _gl.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 20, 12);
     }
     
     private void Draw(double dt)
@@ -114,7 +130,12 @@ void main()
         _gl.BindVertexArray(_vao);
         _gl.UseProgram(_program);
         
-        _gl.DrawElements(PrimitiveType.Triangles, 3, DrawElementsType.UnsignedInt, 0);
+        _gl.Uniform1(_gl.GetUniformLocation(_program, "uTexture"), 0);
+        
+        _gl.ActiveTexture(TextureUnit.Texture0);
+        _gl.BindTexture(TextureTarget.Texture2D, _texture);
+        
+        _gl.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
     }
 
     public void Run()

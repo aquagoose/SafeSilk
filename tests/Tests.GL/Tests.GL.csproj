@@ -13,6 +13,13 @@
 
     <ItemGroup>
       <PackageReference Include="Silk.NET.Windowing" Version="2.16.0" />
+      <PackageReference Include="StbImageSharp" Version="2.27.13" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Content\awesomeface.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

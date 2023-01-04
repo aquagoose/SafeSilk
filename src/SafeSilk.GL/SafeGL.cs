@@ -16,6 +16,14 @@ namespace SafeSilk.GL
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TexImage2D<T>(TextureTarget target, int level, InternalFormat internalFormat, uint width,
+            uint height, int border, PixelFormat format, PixelType type, T[] data) where T : unmanaged
+        {
+            fixed (void* ptr = data)
+                TexImage2D(target, level, internalFormat, width, height, border, format, type, ptr);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void VertexAttribPointer(uint index, int size, VertexAttribPointerType type, bool normalized, uint stride, int offset)
         {
             VertexAttribPointer(index, size, type, normalized, stride, (void*) offset);
