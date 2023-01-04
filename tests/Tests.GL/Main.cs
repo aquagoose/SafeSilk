@@ -112,7 +112,7 @@ void main()
         
         _texture = _gl.GenTexture();
         _gl.BindTexture(TextureTarget.Texture2D, _texture);
-        _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, (uint)result.Width, (uint)result.Height, 0,
+        _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, result.Width, result.Height, 0,
             PixelFormat.Rgba, PixelType.UnsignedByte, result.Data);
         _gl.GenerateMipmap(TextureTarget.Texture2D);
         
